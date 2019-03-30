@@ -5,7 +5,13 @@ VisualStudioVersion = 16.0.28711.60
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DamienTheUnbeliever.System.Linq", "DamienTheUnbeliever.System.Linq\DamienTheUnbeliever.System.Linq.csproj", "{090EE9C5-3ECF-4886-B08B-8A739CA93355}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DamienTheUnbeliever.System.Linq.Tests", "DamienTheUnbeliever.System.Linq.Tests\DamienTheUnbeliever.System.Linq.Tests.csproj", "{BD61A6EA-D6DB-455F-BBD2-0CB91AF95591}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DamienTheUnbeliever.System.Linq.Tests", "DamienTheUnbeliever.System.Linq.Tests\DamienTheUnbeliever.System.Linq.Tests.csproj", "{BD61A6EA-D6DB-455F-BBD2-0CB91AF95591}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E10EF7E2-3FFC-453B-8091-7C8C77449B92}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

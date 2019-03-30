@@ -11,18 +11,20 @@
     <Description>Extension methods for IAsyncEnumerable, similar to System.Linq.Enumerable</Description>
     <PackageTags>async</PackageTags>
     <Version>1.0.0-beta</Version>
+    <RepositoryUrl>https://github.com/Damien-The-Unbeliever/Linq.AsyncEnumerable</RepositoryUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
-    <DocumentationFile>C:\Users\Damien\source\repos\DTU.Linq.AsyncEnumerable\DamienTheUnbeliever.System.Linq\DamienTheUnbeliever.System.Linq.xml</DocumentationFile>
+    <DocumentationFile>C:\Users\Damien\source\repos\Linq.AsyncEnumerable\DamienTheUnbeliever.System.Linq\DamienTheUnbeliever.System.Linq.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
-    <DocumentationFile>C:\Users\Damien\source\repos\DTU.Linq.AsyncEnumerable\DamienTheUnbeliever.System.Linq\DamienTheUnbeliever.System.Linq.xml</DocumentationFile>
+    <DocumentationFile>C:\Users\Damien\source\repos\Linq.AsyncEnumerable\DamienTheUnbeliever.System.Linq\DamienTheUnbeliever.System.Linq.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
