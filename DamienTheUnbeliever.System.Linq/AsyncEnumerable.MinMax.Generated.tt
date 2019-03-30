@@ -1,0 +1,294 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DamienTheUnbeliever.System.Linq
+{
+  public static partial class AsyncEnumerable
+  {
+    #region API
+<# PushIndent("\t\t"); #>
+<# EmitMinMaxAPI("int"); #>
+<# EmitMinMaxAPI("long"); #>
+<# EmitMinMaxAPI("decimal"); #>
+<# EmitMinMaxAPI("float"); #>
+<# EmitMinMaxAPI("double"); #>
+#endregion
+#region Implementation
+<# EmitMinMaxImplementation("int"); #>
+<# EmitMinMaxImplementation("long"); #>
+<# EmitMinMaxImplementation("decimal"); #>
+<# EmitMinMaxImplementation("float"); #>
+<# EmitMinMaxImplementation("double"); #>
+<# PopIndent(); #>
+    #endregion
+  }
+}
+<#+
+	public enum TaskType {
+		None,
+		Value,
+		Class
+	}
+	public void EmitImplementation(TaskType taskType, bool min, string baseType){
+		var compare = min ? ">" : "<";
+		var baseName = min ? "Min" : "Max";
+	  Write("private static async Task<");
+		Write(baseType);
+		Write("> ");
+		Write(baseName);
+		WriteLine("Internal<TSource>(");
+		PushIndent("\t");
+    WriteLine("this IAsyncEnumerable<TSource> source,");
+    Write("Func<TSource, ");
+		if(taskType==TaskType.Class){
+			Write("Task<");
+		}
+		else{
+			Write("ValueTask<");
+		}
+		Write(baseType);
+		WriteLine(">> selector)");
+		PopIndent();
+    WriteLine("{");
+		PushIndent("\t");
+    WriteLine("await using(var iterator = source.GetAsyncEnumerator())");
+    WriteLine("{");
+		PushIndent("\t");
+		Write(baseType);
+    WriteLine(" result = default;");
+    WriteLine("if(!await iterator.MoveNextAsync())");
+    WriteLine("{");
+		PushIndent("\t");
+    WriteLine("throw new InvalidOperationException(NoElement);");
+		PopIndent();
+    WriteLine("}");
+    WriteLine("result = await selector(iterator.Current);");
+    WriteLine("while(await iterator.MoveNextAsync())");
+    WriteLine("{");
+		PushIndent("\t");
+    WriteLine("var newValue = await selector(iterator.Current);");
+    Write("if(result ");
+		Write(compare);
+		WriteLine(" newValue)");
+    WriteLine("{");
+		PushIndent("\t");
+    WriteLine("result = newValue;");
+		PopIndent();
+    WriteLine("}");
+		PopIndent();
+    WriteLine("}");
+    WriteLine("return result;");
+		PopIndent();
+    WriteLine("}");
+		PopIndent();
+    WriteLine("}");
+	}
+	public void EmitMinMaxAPI(string baseType){
+		EmitPublicAPIWithNullablInvaraint(baseType,true);
+		EmitPublicAPIWithNullablInvaraint(baseType,false);
+	}
+	public void EmitMinMaxImplementation(string baseType){
+		EmitNullableImplementations(true,baseType);
+		EmitImplementations(true,baseType);
+		EmitNullableImplementations(false,baseType);
+		EmitImplementations(false,baseType);
+	}
+	public void EmitNullableImplementations(bool min, string baseType){
+		EmitNullableImplementation(TaskType.Class,min,baseType);
+		EmitNullableImplementation(TaskType.Value,min,baseType);
+	}
+	public void EmitImplementations(bool min, string baseType){
+		EmitImplementation(TaskType.Class,min,baseType);
+		EmitImplementation(TaskType.Value,min,baseType);
+	}
+	public void EmitNullableImplementation(TaskType taskType, bool min, string baseType){
+		var compare = min ? ">" : "<";
+		var baseName = min ? "Min" : "Max";
+	  Write("private static async Task<");
+		Write(baseType);
+		Write("?> ");
+		Write(baseName);
+		WriteLine("Internal<TSource>(");
+		PushIndent("\t");
+    WriteLine("this IAsyncEnumerable<TSource> source,");
+    Write("Func<TSource,");
+		if(taskType==TaskType.Class)
+		{
+			Write("Task<");
+		}
+		else
+		{
+			Write("ValueTask<");
+		}
+		Write(baseType);
+		WriteLine("?>> selector)");
+		PopIndent();
+    WriteLine("{");
+		PushIndent("\t");
+		Write(baseType);
+    WriteLine("? result = null;");
+    WriteLine("await foreach(var item in source)");
+    WriteLine("{");
+		PushIndent("\t");
+    WriteLine("var newValue = await selector(item);");
+    Write("if (item != null && (result == null || result ");
+		Write(compare);
+		WriteLine(" newValue))");
+    WriteLine("{");
+		PushIndent("\t");
+    WriteLine("result = newValue;");
+		PopIndent();
+    WriteLine("}");
+		PopIndent();
+    WriteLine("}");
+    WriteLine("return result;");
+		PopIndent();
+    WriteLine("}");
+	}
+	public void EmitXmlDocumentation(bool includeSelector, bool includeException, bool min){
+		var superlative = min ? "lowest" : "highest";
+	  WriteLine("/// <summary>");
+    Write("/// Locates the ");
+		Write(superlative);
+		Write(" value obtained ");
+		if(includeSelector)
+		{
+			WriteLine("by transforming a sequence with a <paramref name=\"selector\"/>");
+		}
+		else
+		{
+			WriteLine("from a sequence");
+		}
+    WriteLine("/// </summary>");
+		if(includeSelector)
+		{
+			WriteLine("/// <typeparam name=\"TSource\">The type of elements in the sequence</typeparam>");
+		}
+    WriteLine("/// <param name=\"source\">The sequence of elements</param>");
+		if(includeSelector)
+		{
+			WriteLine("/// <param name=\"selector\">The selector to transform the results</param>");
+		}
+    Write("/// <returns>The ");
+		Write(superlative);
+		WriteLine(" value found in the sequence</returns>");
+		if(includeException){
+			WriteLine("/// <exception cref=\"InvalidOperationException\">The sequence contains no elements</exception>");
+		}
+	}
+	public void EmitPublicAPI(bool nullable, TaskType taskType, bool includeSelector, string baseType, bool min)
+	{
+		var baseMethodName = min ? "Min" : "Max";
+	  Write("public static Task<");
+		Write(baseType);
+		if(nullable) Write("?");
+		Write("> ");
+		Write(baseMethodName);
+		if(includeSelector)
+		{
+			WriteLine("<TSource>(");
+		}
+		else
+		{
+			WriteLine("(");
+		}
+		PushIndent("\t");
+    Write("this IAsyncEnumerable<");
+		if(includeSelector)
+		{
+			Write("TSource");
+		}
+		else
+		{
+			Write(baseType);
+			if(nullable)
+			{
+				Write("?");
+			}
+		}
+		Write("> source");
+		if(includeSelector)
+		{
+			WriteLine(",");
+			Write("Func<TSource, ");
+			switch(taskType)
+			{
+				case TaskType.Value:
+					Write("ValueTask<");
+					break;
+				case TaskType.Class:
+					Write("Task<");
+					break;
+			}
+			Write(baseType);
+			if(nullable) Write("?");
+			switch(taskType){
+				case TaskType.Value:
+				case TaskType.Class:
+					Write(">");
+					break;
+			}
+			WriteLine("> selector)");
+		}
+		else
+		{
+			WriteLine(")");
+		}
+		PopIndent();
+    WriteLine("{");
+		PushIndent("\t");
+    WriteLine("if (source == null) throw new ArgumentNullException(nameof(source));");
+		if(includeSelector)
+		{
+	    WriteLine("if (selector == null) throw new ArgumentNullException(nameof(selector));");
+		
+		}
+    Write("return ");
+		Write(baseMethodName);
+		Write("Internal(source, ");
+		if(taskType == TaskType.None)
+		{
+			if(includeSelector){
+				Write("s => new ValueTask<");
+				Write(baseType);
+				if(nullable) Write("?");
+				WriteLine(">(selector(s)));");
+			}
+			else
+			{
+				Write("QuickFunctions<");
+				Write(baseType);
+				if(nullable) Write("?");
+				WriteLine(">.IdentityWrapped);");
+			}
+		}
+		else
+		{
+			WriteLine("selector);");
+		}
+		PopIndent();
+    WriteLine("}");
+	}
+	public void EmitPublicAPIWithDocs(bool nullable, TaskType taskType, bool includeSelector, string baseType, bool min){
+		EmitXmlDocumentation(includeSelector,!nullable,min);
+		EmitPublicAPI(nullable,taskType,includeSelector,baseType,min);
+	}
+	public void EmitPublicAPIWithDocsTaskVariant(bool nullable, string baseType, bool min){
+		EmitPublicAPIWithDocs(nullable,TaskType.None,false,baseType,min);
+		EmitPublicAPIWithDocs(nullable,TaskType.None,true,baseType,min);
+		EmitPublicAPIWithDocs(nullable,TaskType.Value,true,baseType,min);
+		EmitPublicAPIWithDocs(nullable,TaskType.Class,true,baseType,min);
+	}
+	public void EmitPublicAPIWithNullablInvaraint(string baseType, bool min){
+		EmitPublicAPIWithDocsTaskVariant(true,baseType,min);
+		EmitPublicAPIWithDocsTaskVariant(false,baseType,min);
+	}
+#>

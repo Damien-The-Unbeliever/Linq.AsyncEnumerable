@@ -1,0 +1,174 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DamienTheUnbeliever.System.Linq
+{
+	public static partial class AsyncEnumerable
+	{
+		#region API
+<# PushIndent("\t\t"); #>
+<# EmitPublicApi(TaskType.None,TaskType.None,TaskType.None); #>
+<# EmitPublicApi(TaskType.None,TaskType.None,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.None,TaskType.Omit,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Value,TaskType.None,TaskType.None); #>
+<# EmitPublicApi(TaskType.Value,TaskType.None,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Omit,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.None,TaskType.Value,TaskType.None); #>
+<# EmitPublicApi(TaskType.None,TaskType.Value,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.None,TaskType.None,TaskType.Value); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Value,TaskType.None); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Value,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.None,TaskType.Value,TaskType.Value); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Class,TaskType.Class); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Class,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.None,TaskType.Class,TaskType.Class); #>
+<# EmitPublicApi(TaskType.None,TaskType.Class,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Omit,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Class,TaskType.None,TaskType.Omit); #>
+<# PopIndent(); #>
+		#endregion
+	}
+}
+
+<#+
+public enum TaskType {
+	None,
+	Omit,
+	Class,
+	Value
+}
+
+public void EmitPublicApi(TaskType seed, TaskType accumulate, TaskType result){
+	WriteLine("/// <summary>");
+	WriteLine("/// Computes an aggregate from a sequence");
+	WriteLine("/// </summary>");
+	WriteLine("/// <typeparam name=\"TSource\">The type of elements in the source sequence</typeparam>");
+	if(accumulate!=TaskType.Omit){
+		WriteLine("/// <typeparam name=\"TAccumulate\">The type of aggregate to compute</typeparam>");
+	}
+	if(result!=TaskType.Omit){
+		WriteLine("/// <typeparam name=\"TResult\">The type of the final result</typeparam>");
+	}
+	WriteLine("/// <param name=\"source\">The original sequence</param>");
+	if(accumulate!=TaskType.Omit){
+		WriteLine("/// <param name=\"seed\">An initial value for the aggregate</param>");
+	}
+	WriteLine("/// <param name=\"func\">A function to compute a new value of the aggregate from its existing value and a new element from the source sequence</param>");
+	if(result!=TaskType.Omit){
+		WriteLine("/// <param name=\"resultSelector\">A transformation for the final result</param>");
+	}
+	WriteLine("/// <returns></returns>");
+
+
+	if(accumulate==TaskType.Omit&&result!=TaskType.Omit) throw new NotSupportedException("Bad combo");
+	if(accumulate==TaskType.Omit&&seed==TaskType.Omit) throw new NotSupportedException("Bad combo");
+	var returnType = "";
+	if(result!=TaskType.Omit) returnType = "TResult";
+	else if(accumulate!=TaskType.Omit) returnType = "TAccumulate";
+	else returnType = "TSource";
+	WriteLine("public static Task<{0}> Aggregate<TSource{1}{2}> (",
+		returnType,
+		accumulate==TaskType.Omit?"":",TAccumulate",
+		result==TaskType.Omit?"":",TResult");
+	PushIndent("\t");
+	WriteLine("this IAsyncEnumerable<TSource> source,");
+	if(accumulate==TaskType.Omit){
+		WriteLine("Func<TSource,TSource,{0}TSource{1}> func",
+			seed==TaskType.None?"":
+			seed==TaskType.Class?"Task<":"ValueTask<",
+			seed==TaskType.None?"":">");
+	}
+	else{
+		WriteLine("{0}TAccumulate{1} seed,",
+			seed==TaskType.None?"":
+			seed==TaskType.Class?"Task<":"ValueTask<",
+			seed==TaskType.None?"":">");
+		Write("Func<TAccumulate,TSource,{0}TAccumulate{1}> func",
+			accumulate==TaskType.None?"":
+			accumulate==TaskType.Class?"Task<":"ValueTask<",
+			accumulate==TaskType.None?"":">");
+		if(result==TaskType.Omit){
+			WriteLine("");
+		}
+		else{
+			WriteLine(",");
+			WriteLine("Func<TAccumulate,{0}TResult{1}> resultSelector",
+			result==TaskType.None?"":
+			result==TaskType.Class?"Task<":"ValueTask<",
+			result==TaskType.None?"":">");
+		}
+	}
+	PopIndent();
+	WriteLine(")");
+	WriteLine("{");
+	PushIndent("\t");
+	WriteLine("if(source==null) throw new ArgumentNullException(nameof(source));");
+	if(accumulate!=TaskType.Omit&&seed==TaskType.Class){
+		WriteLine("if(seed==null) throw new ArgumentNullException(nameof(seed));");
+	}
+	WriteLine("if(func==null) throw new ArgumentNullException(nameof(func));");
+	if(result!=TaskType.Omit){
+		WriteLine("if(resultSelector==null) throw new ArgumentNullException(nameof(resultSelector));");
+	}
+	Write("return AggregateInternal");
+	if(seed==TaskType.Class&&accumulate!=TaskType.Omit){
+		Write("<TSource,TAccumulate,{0}>",result==TaskType.Omit?"TAccumulate":"TResult");
+	}
+	Write("(source,");
+	if(accumulate!=TaskType.Omit){
+		if(seed==TaskType.None){
+			if(accumulate==TaskType.Class){
+				Write("Task.FromResult(seed),");
+			}else{
+				Write("new ValueTask<TAccumulate>(seed),");
+			}
+		}
+		else{
+			Write("seed,");
+		}
+		if(accumulate==TaskType.None){
+			if(seed==TaskType.Class){
+				Write("QuickFunctions.WrapTask(func)");
+			}
+			else{
+				Write("QuickFunctions.WrapValueTask(func)");
+			}
+		}else{
+			Write("func");
+		}
+	}else{
+		if(seed==TaskType.None){
+			Write("(a,b)=>new ValueTask<TSource>(func(a,b))");
+		}else{
+			Write("func");
+		}
+	}
+	if(result!=TaskType.Omit){
+		if(result==TaskType.None){
+			Write(",a=>new ValueTask<TResult>(resultSelector(a))");
+		}else{
+			Write(",resultSelector");
+		}
+	} else if(accumulate!=TaskType.Omit){
+		if(accumulate==TaskType.Class){
+			Write(",QuickFunctions<TAccumulate>.IdentityTasked");		
+		}else if(seed!=TaskType.Class){
+			Write(",QuickFunctions<TAccumulate>.IdentityWrapped");
+		}else{
+			Write(",QuickFunctions<TAccumulate>.IdentityTasked");		
+		}
+	}
+	WriteLine(");");
+	PopIndent();
+	WriteLine("}");
+}
+//public static TResult Aggregate<TSource,TAccumulate,TResult> (this System.Collections.Generic.IEnumerable<TSource> source, TAccumulate seed, Func<TAccumulate,TSource,TAccumulate> func, Func<TAccumulate,TResult> resultSelector);
+#>

@@ -1,0 +1,180 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DamienTheUnbeliever.System.Linq
+{
+  public static partial class AsyncEnumerable
+  {
+    #region API
+<# PushIndent("\t\t"); #>
+<# EmitAPI("int", "double"); #>
+<# EmitAPI("long", "double"); #>
+<# EmitAPI("decimal", "decimal"); #>
+<# EmitAPI("float", "float"); #>
+<# EmitAPI("double", "double"); #>
+
+#endregion
+#region Implementation
+<# EmitImplementation("int","long","double",true); #>
+<# EmitImplementation("long","long","double",false); #>
+<# EmitImplementation("decimal","decimal","decimal",false); #>
+<# EmitImplementation("float","double","float",false); #>
+<# EmitImplementation("double","double","double",false); #>
+
+<# PopIndent(); #>
+    #endregion
+  }
+}
+<#+
+	public enum TaskType {
+		None,
+		Class,
+		Value
+	}
+	public void EmitAPI(string baseType, string returnType){
+		EmitAPIWithDocumentation(baseType, returnType, TaskType.None, false, false);
+		EmitAPIWithDocumentation(baseType, returnType, TaskType.Class, false, true);
+		EmitAPIWithDocumentation(baseType, returnType, TaskType.Value, false, true);
+		EmitAPIWithDocumentation(baseType, returnType, TaskType.None, false, true);
+		EmitAPIWithDocumentation(baseType, returnType, TaskType.None, true, false);
+		EmitAPIWithDocumentation(baseType, returnType, TaskType.Class, true, true);
+		EmitAPIWithDocumentation(baseType, returnType, TaskType.Value, true, true);
+		EmitAPIWithDocumentation(baseType, returnType, TaskType.None, true, true);
+	}
+	public void EmitImplementation(string baseType, string accumulatorType, string returnType,bool castAccumulator){
+		EmitNullableImplementation(baseType,accumulatorType,returnType,TaskType.Class,castAccumulator);
+		EmitNullableImplementation(baseType,accumulatorType,returnType,TaskType.Value,castAccumulator);
+		EmitOtherImplementation(baseType,accumulatorType,returnType,TaskType.Class,castAccumulator);
+		EmitOtherImplementation(baseType,accumulatorType,returnType,TaskType.Value,castAccumulator);
+	}
+	public void EmitNullableImplementation(string baseType, string accumulatorType, string returnType, TaskType taskType, bool castAccumulator){
+		WriteLine("private static async Task<{0}?> AverageInternal<TSource>(",returnType);
+		PushIndent("\t");
+			WriteLine("this IAsyncEnumerable<TSource> source,");
+			WriteLine("Func<TSource, {1}<{0}?>> selector",baseType,taskType==TaskType.Class?"Task":"ValueTask");
+		PopIndent();
+    WriteLine(")");
+    WriteLine("{");
+		PushIndent("\t");
+			WriteLine("long count = 0;");
+			WriteLine("{0}? sum = null;",accumulatorType);
+			WriteLine("await foreach (var item in source)");
+			WriteLine("{");
+			PushIndent("\t");
+        WriteLine("var value = await selector(item);");
+        WriteLine("if (value.HasValue)");
+        WriteLine("{");
+	  		PushIndent("\t");
+		      WriteLine("count++;");
+          WriteLine("sum = value.Value + (sum??0);");
+					PopIndent();
+        WriteLine("}");
+      	PopIndent();
+			WriteLine("}");
+      WriteLine("if (count > 0&&sum.HasValue)");
+      WriteLine("{");
+			PushIndent("\t");
+			if(castAccumulator){
+        WriteLine("return (({0})sum) / count;",returnType);
+			} else {
+				WriteLine("return ({0})(sum / count);",returnType);
+			}
+				PopIndent();
+      WriteLine("}");
+      WriteLine("return null;");
+			PopIndent();
+    WriteLine("}");
+	}
+	public void EmitOtherImplementation(string baseType, string accumulatorType, string returnType, TaskType taskType, bool castAccumulator){
+	  WriteLine("private static async Task<{0}> AverageInternal<TSource>(",returnType);
+		PushIndent("\t");
+      WriteLine("this IAsyncEnumerable<TSource> source,");
+      WriteLine("Func<TSource, {1}<{0}>> selector",baseType,taskType==TaskType.Class?"Task":"ValueTask");
+			PopIndent();
+    WriteLine(")");
+    WriteLine("{");
+		PushIndent("\t");
+      WriteLine("await using(var iterator=source.GetAsyncEnumerator())");
+      WriteLine("{");
+			PushIndent("\t");
+        WriteLine("if(!await iterator.MoveNextAsync())");
+        WriteLine("{");
+				PushIndent("\t");
+          WriteLine("throw new InvalidOperationException(NoElement);");
+				PopIndent();
+        WriteLine("}");
+        WriteLine("long count = 1;");
+        WriteLine("{0} sum = await selector(iterator.Current);",accumulatorType);
+        WriteLine("while(await iterator.MoveNextAsync())");
+        WriteLine("{");
+				PushIndent("\t");
+          WriteLine("count++;");
+          WriteLine("sum += await selector(iterator.Current);");
+					PopIndent();
+        WriteLine("}");
+				if(castAccumulator){
+					WriteLine("return (({0})sum) / count;",returnType);
+				} else {
+					WriteLine("return ({0})(sum / count);",returnType);
+				}
+				PopIndent();
+      WriteLine("}");
+			PopIndent();
+    WriteLine("}");
+	}
+	public void EmitXmlDocumentation(bool includeSelector){
+    WriteLine("/// <summary>");
+		if(includeSelector){
+			WriteLine("/// Computes the average value of values selected from items in a sequence via a <paramref name=\"selector\"/>");
+		} else {
+			WriteLine("/// Computes the average value of values in a sequence");
+		}
+    WriteLine("/// </summary>");
+		if(includeSelector){
+			WriteLine("/// <typeparam name=\"TSource\">The type of elements in the sequence</typeparam>");
+		}
+    WriteLine("/// <param name=\"source\">The sequence of elements</param>");
+		if(includeSelector){
+			WriteLine("/// <param name=\"selector\">The selector to extract the values to averag</param>");
+		}
+    WriteLine("/// <returns>The average value of the elements</returns>");
+	}
+	public void EmitAPIWithDocumentation(string baseType, string returnType, TaskType taskType, bool nullable, bool includeSelector){
+		EmitXmlDocumentation(includeSelector);
+		string taskTypeStart = "";
+		if(taskType==TaskType.Class) taskTypeStart = "Task<";
+		if(taskType==TaskType.Value) taskTypeStart = "ValueTask<";
+	  WriteLine("public static Task<{0}{2}> Average{1}(",returnType,includeSelector?"<TSource>":"",nullable?"?":"");
+		PushIndent("\t");
+      WriteLine("this IAsyncEnumerable<{0}{1}> source",includeSelector?"TSource":baseType,nullable&&!includeSelector?"?":"");
+			if(includeSelector){
+				WriteLine(",Func<TSource, {2}{0}{1}{3}> selector",baseType,nullable?"?":"",taskTypeStart,taskType!=TaskType.None?">":"");
+			}
+			PopIndent();
+		WriteLine(")");
+    WriteLine("{");
+		PushIndent("\t");
+      WriteLine("if (source == null) throw new ArgumentNullException(nameof(source));");
+			if(includeSelector){
+				WriteLine("if (selector == null) throw new ArgumentNullException(nameof(selector));");
+	      WriteLine("return AverageInternal(source, {0}{2}{3}{1});",
+					taskType==TaskType.None?"s=>new ValueTask<":"",
+					taskType==TaskType.None?">(selector(s))":"selector",
+					taskType==TaskType.None?baseType:"",
+					taskType==TaskType.None&&nullable?"?":"");
+			}
+			else{
+	      WriteLine("return AverageInternal(source,QuickFunctions<{0}{1}>.IdentityWrapped);",baseType,nullable?"?":"");
+			}
+			PopIndent();
+    WriteLine("}");
+	}
+#>

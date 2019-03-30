@@ -1,0 +1,83 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <NullableContextOptions>enable</NullableContextOptions>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>DamienTheUnbeliever.AsyncEnumerable</PackageId>
+    <Authors>Damien_The_Unbeliever</Authors>
+    <Product>DamienTheUnbeliever.AsyncEnumerable</Product>
+    <Description>Extension methods for IAsyncEnumerable, similar to System.Linq.Enumerable</Description>
+    <PackageTags>async</PackageTags>
+    <Version>1.0.0-beta</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <DocumentationFile>C:\Users\Damien\source\repos\DTU.Linq.AsyncEnumerable\DamienTheUnbeliever.System.Linq\DamienTheUnbeliever.System.Linq.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <DocumentationFile>C:\Users\Damien\source\repos\DTU.Linq.AsyncEnumerable\DamienTheUnbeliever.System.Linq\DamienTheUnbeliever.System.Linq.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="AsyncEnumerable.Aggregate.Generated.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AsyncEnumerable.Aggregate.Generated.tt</DependentUpon>
+    </Compile>
+    <Compile Update="AsyncEnumerable.Average.Generated.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AsyncEnumerable.Average.Generated.tt</DependentUpon>
+    </Compile>
+    <Compile Update="AsyncEnumerable.GroupBy.Generated.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AsyncEnumerable.GroupBy.Generated.tt</DependentUpon>
+    </Compile>
+    <Compile Update="AsyncEnumerable.MinMax.Generated.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AsyncEnumerable.MinMax.Generated.tt</DependentUpon>
+    </Compile>
+    <Compile Update="AsyncEnumerable.Sum.Generated.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AsyncEnumerable.Sum.Generated.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="AsyncEnumerable.Aggregate.Generated.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>AsyncEnumerable.Aggregate.Generated.cs</LastGenOutput>
+    </None>
+    <None Update="AsyncEnumerable.Average.Generated.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>AsyncEnumerable.Average.Generated.cs</LastGenOutput>
+    </None>
+    <None Update="AsyncEnumerable.GroupBy.Generated.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>AsyncEnumerable.GroupBy.Generated.cs</LastGenOutput>
+    </None>
+    <None Update="AsyncEnumerable.MinMax.Generated.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>AsyncEnumerable.MinMax.Generated.cs</LastGenOutput>
+    </None>
+    <None Update="AsyncEnumerable.Sum.Generated.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>AsyncEnumerable.Sum.Generated.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>

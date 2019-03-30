@@ -1,0 +1,141 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DamienTheUnbeliever.System.Linq
+{
+	public static partial class AsyncEnumerable
+	{
+		#region API
+<# PushIndent("\t\t"); #>
+<# EmitPublicApi(TaskType.None,TaskType.None,TaskType.None,TaskType.None); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Class,TaskType.Class,TaskType.None); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Value,TaskType.Value,TaskType.None); #>
+<# EmitPublicApi(TaskType.None,TaskType.None,TaskType.None,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Class,TaskType.Class,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Value,TaskType.Value,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.None,TaskType.None,TaskType.Omit,TaskType.None); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Class,TaskType.Omit,TaskType.None); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Value,TaskType.Omit,TaskType.None); #>
+<# EmitPublicApi(TaskType.None,TaskType.None,TaskType.Omit,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Class,TaskType.Omit,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Value,TaskType.Omit,TaskType.Omit); #>
+
+<# EmitPublicApi(TaskType.None,TaskType.Omit,TaskType.None,TaskType.None); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Omit,TaskType.Class,TaskType.None); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Omit,TaskType.Value,TaskType.None); #>
+<# EmitPublicApi(TaskType.None,TaskType.Omit,TaskType.None,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Omit,TaskType.Class,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Omit,TaskType.Value,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.None,TaskType.Omit,TaskType.Omit,TaskType.None); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Omit,TaskType.Omit,TaskType.None); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Omit,TaskType.Omit,TaskType.None); #>
+<# EmitPublicApi(TaskType.None,TaskType.Omit,TaskType.Omit,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Class,TaskType.Omit,TaskType.Omit,TaskType.Omit); #>
+<# EmitPublicApi(TaskType.Value,TaskType.Omit,TaskType.Omit,TaskType.Omit); #>
+<# PopIndent(); #>
+		#endregion
+	}
+}
+
+<#+
+public enum TaskType {
+	None,
+	Omit,
+	Class,
+	Value
+}
+
+public void EmitPublicApi(TaskType key, TaskType element, TaskType result, TaskType comparer){
+	WriteLine("/// <summary>");
+	Write("/// Form groups of elements using a key selector.");
+	if(element!=TaskType.Omit){
+		Write("Transform each element.");
+	}
+	if(result!=TaskType.Omit){
+		Write("Combine the elements into a result.");
+	}
+	WriteLine("");
+	WriteLine("/// </summary>");
+	WriteLine("/// <typeparam name=\"TSource\">The type of elements in the sequence</typeparam>");
+	WriteLine("/// <typeparam name=\"TKey\">The type used as the key for grouping</typeparam>");
+	if(element!=TaskType.Omit){
+		WriteLine("/// <typeparam name=\"TElement\">The type into which each element of the sequence is transformed</typeparam>");
+	}
+	if(result!=TaskType.Omit){
+		WriteLine("/// <typeparam name=\"TResult\">The type of the final result</typeparam>");
+	}
+	WriteLine("/// <param name=\"source\">The sequence of elements</param>");
+	WriteLine("/// <param name=\"keySelector\">The function to extract keys from the elements</param>");
+	if(element!=TaskType.Omit){
+		WriteLine("/// <param name=\"elementSelector\">The transformation to apply to individual elements</param>");
+	}
+	if(result!=TaskType.Omit){
+		WriteLine("/// <param name=\"resultSelector\">The function to reduce the transformed elements into a final result</param>");
+	}
+	if(comparer!=TaskType.Omit){
+		WriteLine("/// <param name=\"comparer\">The means by which elements are compared</param>");
+	}
+	WriteLine("/// <returns>The set of result</returns>");
+	if(comparer==TaskType.Omit){
+		WriteLine("/// <remarks>The default equality comparer for <typeparamref name=\"TKey\"/> will be used</remarks>");
+	}
+
+	WriteLine("public static IAsyncEnumerable<{1}> GroupBy<TSource, TKey{2}{0}>(",
+		result==TaskType.Omit?"":", TResult",
+		result!=TaskType.Omit?"TResult":"IAsyncGrouping<TKey," + (element==TaskType.Omit?"TSource":"TElement") + ">",
+		element==TaskType.Omit?"":", TElement");
+	PushIndent("\t");
+		WriteLine("this IAsyncEnumerable<TSource> source,");
+		WriteLine("Func<TSource, {0}TKey{1}> keySelector", key==TaskType.Class? "Task<" : key==TaskType.Value? "ValueTask<" : "",key==TaskType.None?"":">");
+		if(element!=TaskType.Omit){
+			WriteLine(",Func<TSource, {0}TElement{1}> elementSelector", element==TaskType.Class? "Task<" : element==TaskType.Value? "ValueTask<" : "",element==TaskType.None?"":">");
+		}
+		if(result!=TaskType.Omit){
+			WriteLine(",Func<TKey, IAsyncEnumerable<{2}>, {0}TResult{1}> resultSelector",
+				result==TaskType.Class? "Task<" : result==TaskType.Value? "ValueTask<" : "",
+				result==TaskType.None?"":">",
+				element==TaskType.Omit?"TSource":"TElement");
+		}
+		if(comparer!=TaskType.Omit){
+			WriteLine(",IEqualityComparer<TKey> comparer");
+		}
+		PopIndent();
+	WriteLine(")");
+	WriteLine("{");
+	PushIndent("\t");
+		WriteLine("if (source == null) throw new ArgumentNullException(nameof(source));");
+		WriteLine("if (keySelector == null) throw new ArgumentNullException(nameof(keySelector));");
+		if(element!=TaskType.Omit){
+			WriteLine("if (elementSelector == null) throw new ArgumentNullException(nameof(elementSelector));");
+		}
+		if(result!=TaskType.Omit){
+			WriteLine("if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));");
+		}
+		Write("return GroupByInternal(source, ");
+		Write("{0}keySelector{1}, ",key==TaskType.None?"QuickFunctions.WrapValueTask(":"",key==TaskType.None?")":"");
+		if(element==TaskType.Omit){
+			Write("QuickFunctions<TSource>.{0},",key==TaskType.Class?"IdentityTasked":"IdentityWrapped");
+		}else{
+			Write("{0}elementSelector{1}, ",element==TaskType.None?"QuickFunctions.WrapValueTask(":"",element==TaskType.None?")":"");
+		}
+		if(result!=TaskType.Omit){
+			Write("{0}resultSelector{1}, ",result==TaskType.None?"QuickFunctions.WrapValueTask(":"",result==TaskType.None?")":"");
+		}
+		if(comparer==TaskType.Omit){
+			Write("null");
+		}else{
+			Write("comparer");
+		}
+		WriteLine(");");
+		PopIndent();
+	WriteLine("}");
+}
+#>

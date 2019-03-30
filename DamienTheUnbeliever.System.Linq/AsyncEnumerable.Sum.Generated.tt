@@ -1,0 +1,228 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DamienTheUnbeliever.System.Linq
+{
+  public static partial class AsyncEnumerable
+  {
+    #region API
+<# PushIndent("\t\t"); #>
+<# EmitSumAPI("int"); #>
+<# EmitSumAPI("long"); #>
+<# EmitSumAPI("decimal"); #>
+<# EmitSumAPI("float"); #>
+<# EmitSumAPI("double"); #>
+#endregion
+#region Implementation
+<# EmitSumImplementation("int"); #>
+<# EmitSumImplementation("long"); #>
+<# EmitSumImplementation("decimal"); #>
+<# EmitSumImplementation("float"); #>
+<# EmitSumImplementation("double"); #>
+<# PopIndent(); #>
+    #endregion
+  }
+}
+<#+
+	public enum TaskType {
+		None,
+		Value,
+		Class
+	}
+	public void EmitSumImplementation(string baseType){
+		EmitNullableImplementations(baseType);
+		EmitImplementations(baseType);
+	}
+	public void EmitNullableImplementations(string baseType){
+		EmitImplementation(true, TaskType.Class,baseType);
+		EmitImplementation(true, TaskType.Value,baseType);
+	}
+	public void EmitImplementations(string baseType){
+		EmitImplementation(false, TaskType.Class,baseType);
+		EmitImplementation(false, TaskType.Value,baseType);
+	}
+	public void EmitImplementation(bool nullable, TaskType taskType, string baseType){
+	  Write("private static async Task<");
+		Write(baseType);
+		WriteLine("> SumInternal<TSource>(");
+		PushIndent("\t");
+    WriteLine("this IAsyncEnumerable<TSource> source,");
+    Write("Func<TSource,");
+		if(taskType==TaskType.Class)
+		{
+			Write("Task<");
+		}
+		else
+		{
+			Write("ValueTask<");
+		}
+		Write(baseType);
+		if(nullable){
+			Write("?");
+		}
+		WriteLine(">> selector)");
+		PopIndent();
+    WriteLine("{");
+		PushIndent("\t");
+		Write(baseType);
+    WriteLine(" result = 0;");
+    WriteLine("await foreach(var item in source)");
+    WriteLine("{");
+		PushIndent("\t");
+		WriteLine("var newValue = await selector(item);");
+		if(nullable){
+			WriteLine("if(newValue.HasValue)");
+			WriteLine("{");
+			PushIndent("\t");
+		}
+    Write("result += newValue");
+		if(nullable){
+			WriteLine(".Value;");
+			PopIndent();
+			WriteLine("}");
+		}
+		else{
+			WriteLine(";");
+		}
+		PopIndent();
+    WriteLine("}");
+    WriteLine("return result;");
+		PopIndent();
+    WriteLine("}");
+	}
+	public void EmitXmlDocumentation(bool includeSelector){
+	  WriteLine("/// <summary>");
+    Write("/// Totals the values obtained ");
+		if(includeSelector)
+		{
+			WriteLine("by transforming a sequence with a <paramref name=\"selector\"/>");
+		}
+		else
+		{
+			WriteLine("from a sequence");
+		}
+    WriteLine("/// </summary>");
+		if(includeSelector)
+		{
+			WriteLine("/// <typeparam name=\"TSource\">The type of elements in the sequence</typeparam>");
+		}
+    WriteLine("/// <param name=\"source\">The sequence of elements</param>");
+		if(includeSelector)
+		{
+			WriteLine("/// <param name=\"selector\">The selector to transform the results</param>");
+		}
+    WriteLine("/// <returns>The total of values found in the sequence</returns>");
+	}
+	public void EmitPublicAPI(bool nullable, TaskType taskType, bool includeSelector, string baseType)
+	{
+	  Write("public static Task<");
+		Write(baseType);
+		Write("> ");
+		Write("Sum");
+		if(includeSelector)
+		{
+			WriteLine("<TSource>(");
+		}
+		else
+		{
+			WriteLine("(");
+		}
+		PushIndent("\t");
+    Write("this IAsyncEnumerable<");
+		if(includeSelector)
+		{
+			Write("TSource");
+		}
+		else
+		{
+			Write(baseType);
+			if(nullable)
+			{
+				Write("?");
+			}
+		}
+		Write("> source");
+		if(includeSelector)
+		{
+			WriteLine(",");
+			Write("Func<TSource, ");
+			switch(taskType)
+			{
+				case TaskType.Value:
+					Write("ValueTask<");
+					break;
+				case TaskType.Class:
+					Write("Task<");
+					break;
+			}
+			Write(baseType);
+			if(nullable) Write("?");
+			switch(taskType){
+				case TaskType.Value:
+				case TaskType.Class:
+					Write(">");
+					break;
+			}
+			WriteLine("> selector)");
+		}
+		else
+		{
+			WriteLine(")");
+		}
+		PopIndent();
+    WriteLine("{");
+		PushIndent("\t");
+    WriteLine("if (source == null) throw new ArgumentNullException(nameof(source));");
+		if(includeSelector)
+		{
+	    WriteLine("if (selector == null) throw new ArgumentNullException(nameof(selector));");
+		
+		}
+    Write("return ");
+		Write("SumInternal(source, ");
+		if(taskType == TaskType.None)
+		{
+			if(includeSelector){
+				Write("s => new ValueTask<");
+				Write(baseType);
+				if(nullable) Write("?");
+				WriteLine(">(selector(s)));");
+			}
+			else
+			{
+				Write("QuickFunctions<");
+				Write(baseType);
+				if(nullable) Write("?");
+				WriteLine(">.IdentityWrapped);");
+			}
+		}
+		else
+		{
+			WriteLine("selector);");
+		}
+		PopIndent();
+    WriteLine("}");
+	}
+	public void EmitPublicAPIWithDocs(bool nullable, TaskType taskType, bool includeSelector, string baseType){
+		EmitXmlDocumentation(includeSelector);
+		EmitPublicAPI(nullable,taskType,includeSelector,baseType);
+	}
+	public void EmitPublicAPIWithDocsTaskVariant(bool nullable, string baseType){
+		EmitPublicAPIWithDocs(nullable,TaskType.None,false,baseType);
+		EmitPublicAPIWithDocs(nullable,TaskType.None,true,baseType);
+		EmitPublicAPIWithDocs(nullable,TaskType.Value,true,baseType);
+		EmitPublicAPIWithDocs(nullable,TaskType.Class,true,baseType);
+	}
+	public void EmitSumAPI(string baseType){
+		EmitPublicAPIWithDocsTaskVariant(true,baseType);
+		EmitPublicAPIWithDocsTaskVariant(false,baseType);
+	}
+#>
